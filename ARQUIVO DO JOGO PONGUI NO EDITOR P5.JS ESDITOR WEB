@@ -1,0 +1,133 @@
+// Variáveis do jogo
+let player1Y, player2Y;
+let playerWidth, playerHeight;
+let ballX, ballY;
+let ballSpeedX, ballSpeedY;
+let ballRadius;
+let playerSpeed;
+let player1Score, player2Score;
+
+function setup() {
+  createCanvas(800, 400);
+  
+  // Configuração inicial do jogo
+  playerWidth = 10;
+  playerHeight = 80;
+  playerSpeed = 6;
+  player1Y = height / 2 - playerHeight / 2;
+  player2Y = height / 2 - playerHeight / 2;
+  
+  ballX = width / 2;
+  ballY = height / 2;
+  ballSpeedX = random([-4, 4]);
+  ballSpeedY = random([-4, 4]);
+  ballRadius = 10;
+  
+  player1Score = 0;
+  player2Score = 0;
+}
+
+function draw() {
+  background(0);
+  drawPaddles();
+  drawBall();
+  drawScores();
+  
+  movePaddles();
+  moveBall();
+  
+  checkCollision();
+}
+
+function drawPaddles() {
+  fill(255);
+  rect(playerWidth, player1Y, playerWidth, playerHeight);
+  rect(width - playerWidth * 2, player2Y, playerWidth, playerHeight);
+}
+
+function drawBall() {
+  fill(255);
+  ellipse(ballX, ballY, ballRadius * 2, ballRadius * 2);
+}
+
+function drawScores() {
+  fill(255);
+  textSize(32);
+  text(player1Score, width / 4, 50);
+  text(player2Score, width / 4 * 3, 50);
+}
+
+function movePaddles() {
+  if (keyIsDown(UP_ARROW)) {
+    player2Y -= playerSpeed;
+  }
+  if (keyIsDown(DOWN_ARROW)) {
+    player2Y += playerSpeed;
+  }
+  
+  if (keyIsDown(87)) {
+    player1Y -= playerSpeed;
+  }
+  if (keyIsDown(83)) {
+    player1Y += playerSpeed;
+  }
+  
+  player1Y = constrain(player1Y, 0, height - playerHeight);
+  player2Y = constrain(player2Y, 0, height - playerHeight);
+}
+
+function moveBall() {
+  ballX += ballSpeedX;
+  ballY += ballSpeedY;
+}
+
+function checkCollision() {
+  // Verifica colisão com as paletas
+  if (
+    ballY > player1Y &&
+    ballY < player1Y + playerHeight &&
+    ballX - ballRadius < playerWidth * 2
+  ) {
+    ballSpeedX *= -1;
+  }
+  if (
+    ballY > player2Y &&
+    ballY < player2Y + playerHeight &&
+    ballX + ballRadius > width - playerWidth * 2
+  ) {
+    ballSpeedX *= -1;
+  }
+  
+  // Verifica colisão com as paredes superior e inferior
+  if (ballY - ballRadius < 0 || ballY + ballRadius > height) {
+    ballSpeedY *= -1;
+  }
+  
+  // Verifica se houve um ponto marcado
+  if (ballX - ballRadius < 0) {
+    player2Score++;
+    resetBall();
+  }
+  if (ballX + ballRadius > width) {
+    player1Score++;
+    resetBall();
+  }
+}
+
+function resetBall() {
+  ballX = width / 2;
+  ballY = height / 2;
+  ballSpeedX = random([-4, 4]);
+  ballSpeedY = random([-4, 4]);
+}
+
+function keyPressed() {
+  if (keyCode === ENTER) {
+    resetScores();
+  }
+}
+
+function resetScores() {
+  player1Score = 0;
+  player2Score = 0;
+}
