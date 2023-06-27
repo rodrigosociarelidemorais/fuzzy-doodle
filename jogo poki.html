@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        canvas {
+            background: #000;
+            display: block;
+            margin: 20px auto;
+        }
+
+        #buttons-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #pause-button, #continue-button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="pong" width="800" height="400"></canvas>
+
+    <div id="buttons-container">
+        <button id="pause-button">Pausar</button>
+        <button id="continue-button">Continuar</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("pong");
+        const context = canvas.getContext("2d");
+
+        // Criação da bola
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 10,
+            speed: 4,
+            dx: 4,
+            dy: 4
+        };
+
+        // Criação das paletas de cada jogador
+        const paddleHeight = 100;
+        const paddleWidth = 10;
+
+        const player1 = {
+            x: 0,
+            y: canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            color: "#9ACD32",
+            dy: 8
+        };
+
+        const player2 = {
+            x: canvas.width - paddleWidth,
+            y: canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            color: "#FF4500",
+            dy: 8
+        };
+
+        // Criação do placar
+        const score = {
+            player1: 0,
+            player2: 0
+        };
+
+        // Efeitos sonoros
+        const scoreSound = new Audio("score.wav");
+
+        // Controle do jogo
+        let gamePaused = false;
+
+        // Desenha a bola na tela
+        function drawBall(x, y, radius, color) {
+            context.fillStyle = color;
+            context.beginPath();
+            context.arc(x, y, radius, 0, Math.PI * 2, false);
+            context.closePath();
+            context.fill();
+        }
+
+        // Desenha as paletas na tela
+        function drawPaddle(x, y, width, height, color) {
+            context.fillStyle = color;
+            context.fillRect(x, y, width, height);
+        }
+
+        // Desenha o placar na tela
+        function drawScore(x, y, score, color) {
+            context.fillStyle = color;
+            context.font = "35px sans-serif";
+            context.fillText(score, x, y);
+        }
+
+        // Move as paletas dos jogadores
+        function movePaddle(player) {
+            if (player.upPressed) {
+                player.y -= player.dy;
+            } else if (player.downPressed) {
+                player.y += player.dy;
+            }
+
+            if (player.y < 0) {
+                player.y = 0;
+            } else if (player.y + player.height > canvas.height) {
+                player.y = canvas.height - player.height;
+            }
+        }
+
+        // Atualiza a tela a cada frame
+        function update() {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawBall(ball.x, ball.y, ball.radius, "#FFF");
+            drawPaddle(player1.x, player1.y, player1.width, player1.height, player1.color);
+            drawPaddle(player2.x, player2.y, player2.width, player2.height, player2.color);
+            drawScore(canvas.width / 2 - 15, 35, score.player1, "#9ACD32");
+            drawScore(canvas.width / 2 + 15, 35, score.player2, "#FF4500");
+
+            movePaddle(player1);
+            movePaddle(player2);
+
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // Verifica colisões com as paletas dos jogadores
+            if (
+                ball.y + ball.radius > player1.y &&
+                ball.y - ball.radius < player1.y + player1.height &&
+                ball.dx < 0
+            ) {
+                if (ball.x - ball.radius < player1.x + player1.width) {
+                    ball.dx *= -1;
+                }
+            } else if (
+                ball.y + ball.radius > player2.y &&
+                ball.y - ball.radius < player2.y + player2.height &&
+                ball.dx > 0
+            ) {
+                if (ball.x + ball.radius > player2.x) {
+                    ball.dx *= -1;
+                }
+            }
+
+            // Verifica colisões com as paredes superior e inferior
+            if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
+                ball.dy *= -1;
+            }
+
+            // Verifica se a bola passou pelas paletas dos jogadores
+            if (ball.x - ball.radius < 0) {
+                score.player2++;
+                scoreSound.play();
+                resetBall();
+            } else if (ball.x + ball.radius > canvas.width) {
+                score.player1++;
+                scoreSound.play();
+                resetBall();
+            }
+
+            if (!gamePaused) {
+                requestAnimationFrame(update);
+            }
+        }
+
+        // Reseta a posição da bola para o centro
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.dx = ball.speed * (Math.random() > 0.5 ? 1 : -1);
+            ball.dy = ball.speed * (Math.random() > 0.5 ? 1 : -1);
+        }
+
+        // Move as paletas dos jogadores de acordo com as teclas pressionadas
+        function keyDownHandler(event) {
+            if (event.key === "w") {
+                player1.upPressed = true;
+            } else if (event.key === "s") {
+                player1.downPressed = true;
+            } else if (event.key === "ArrowUp") {
+                player2.upPressed = true;
+            } else if (event.key === "ArrowDown") {
+                player2.downPressed = true;
+            }
+        }
+
+        // Interrompe o movimento das paletas dos jogadores quando as teclas são soltas
+        function keyUpHandler(event) {
+            if (event.key === "w") {
+                player1.upPressed = false;
+            } else if (event.key === "s") {
+                player1.downPressed = false;
+            } else if (event.key === "ArrowUp") {
+                player2.upPressed = false;
+            } else if (event.key === "ArrowDown") {
+                player2.downPressed = false;
+            }
+        }
+
+        // Event listeners para as teclas
+        document.addEventListener("keydown", keyDownHandler);
+        document.addEventListener("keyup", keyUpHandler);
+
+        // Botão de pausar
+        const pauseButton = document.getElementById("pause-button");
+        pauseButton.addEventListener("click", () => {
+            gamePaused = true;
+        });
+
+        // Botão de continuar
+        const continueButton = document.getElementById("continue-button");
+        continueButton.addEventListener("click", () => {
+            gamePaused = false;
+            update();
+        });
+
+        // Inicia o jogo
+        resetBall();
+        update();
+    </script>
+</body>
+</html>
+<div id="instructions">
+        <h2>Instruções:</h2>
+        <p>Use as teclas W e S para mover a paleta do jogador 1 para cima e para baixo.</p>
+        <p>Use as setas para cima e para baixo para mover a paleta do jogador 2.</p>
+        <p>O objetivo é acertar a bola com as paletas e marcar pontos ao fazer a bola passar pela paleta do oponente.</p>
+        <P>criado por rodrigo 1ds</P>
+    </div>
